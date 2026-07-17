@@ -1,0 +1,1175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Typing Dojo</title>
+<style>
+  :root {
+    --bg: #f6f7f9;
+    --panel: #ffffff;
+    --fg: #1c1f24;
+    --muted: #8b93a1;
+    --faint: #c7cdd6;
+    --line: #e6e9ee;
+    --accent: #3b7dff;
+    --accent-soft: #e7f0ff;
+    --good: #35a678;
+    --bad: #e0544e;
+    --bad-soft: #fbe9e8;
+    --warn: #e0a13a;
+    /* finger colors */
+    --f-pinky: #d98cc0;
+    --f-ring:  #a48bd9;
+    --f-mid:   #6fa8dc;
+    --f-index: #6fc9a8;
+    --f-thumb: #d0d5dd;
+    --radius: 12px;
+    --shadow: 0 1px 2px rgba(18,23,32,.05), 0 6px 24px rgba(18,23,32,.06);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  }
+  /* Dark palette: applied when the OS prefers dark (unless the user forced light),
+     or when the user explicitly picks dark via the toggle. */
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #14171c;
+      --panel: #1b1f26;
+      --fg: #e8ebef;
+      --muted: #8b93a1;
+      --faint: #4a515c;
+      --line: #2a2f38;
+      --accent: #5b93ff;
+      --accent-soft: #1e2a44;
+      --good: #46b98a;
+      --bad: #ef6b64;
+      --bad-soft: #3a2321;
+      --f-pinky: #c069a6;
+      --f-ring:  #8a6fce;
+      --f-mid:   #4f8dcf;
+      --f-index: #4bb894;
+      --f-thumb: #3a4049;
+      --shadow: 0 1px 2px rgba(0,0,0,.3), 0 8px 30px rgba(0,0,0,.35);
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #14171c;
+    --panel: #1b1f26;
+    --fg: #e8ebef;
+    --muted: #8b93a1;
+    --faint: #4a515c;
+    --line: #2a2f38;
+    --accent: #5b93ff;
+    --accent-soft: #1e2a44;
+    --good: #46b98a;
+    --bad: #ef6b64;
+    --bad-soft: #3a2321;
+    --f-pinky: #c069a6;
+    --f-ring:  #8a6fce;
+    --f-mid:   #4f8dcf;
+    --f-index: #4bb894;
+    --f-thumb: #3a4049;
+    --shadow: 0 1px 2px rgba(0,0,0,.3), 0 8px 30px rgba(0,0,0,.35);
+  }
+
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--fg);
+    min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+    line-height: 1.5;
+  }
+  button { font-family: inherit; color: inherit; }
+  ::selection { background: var(--accent-soft); }
+
+  .wrap { max-width: 920px; margin: 0 auto; padding: 24px 20px 80px; }
+
+  /* Header / nav */
+  header {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 16px; margin-bottom: 28px; flex-wrap: wrap;
+  }
+  .brand { display: flex; align-items: baseline; gap: 10px; }
+  .brand h1 { font-size: 20px; margin: 0; letter-spacing: -.02em; font-weight: 650; }
+  .brand .dot { color: var(--accent); }
+  .brand small { color: var(--muted); font-size: 12.5px; }
+
+  .nav-group { display: flex; align-items: center; gap: 10px; }
+  nav { display: flex; gap: 4px; background: var(--panel); padding: 4px; border-radius: 999px; box-shadow: var(--shadow); }
+  .theme-toggle {
+    width: 38px; height: 38px; border-radius: 999px; border: 0; cursor: pointer;
+    background: var(--panel); box-shadow: var(--shadow); color: var(--fg);
+    font-size: 17px; line-height: 1; display: inline-flex; align-items: center; justify-content: center;
+    transition: transform .05s, background .12s;
+  }
+  .theme-toggle:hover { background: var(--line); }
+  .theme-toggle:active { transform: scale(.94); }
+  nav button {
+    border: 0; background: transparent; color: var(--muted);
+    padding: 8px 16px; border-radius: 999px; cursor: pointer;
+    font-size: 14px; font-weight: 550; transition: color .15s, background .15s;
+  }
+  nav button:hover { color: var(--fg); }
+  nav button.active { background: var(--accent); color: #fff; }
+
+  /* Cards */
+  .card {
+    background: var(--panel); border-radius: var(--radius);
+    box-shadow: var(--shadow); padding: 22px;
+  }
+  .card + .card { margin-top: 18px; }
+
+  h2 { font-size: 16px; margin: 0 0 4px; font-weight: 620; letter-spacing: -.01em; }
+  .sub { color: var(--muted); font-size: 13.5px; margin: 0 0 18px; }
+
+  /* Metrics row */
+  .metrics { display: flex; gap: 10px; margin-bottom: 18px; flex-wrap: wrap; }
+  .metric {
+    flex: 1; min-width: 92px; background: var(--bg); border: 1px solid var(--line);
+    border-radius: 10px; padding: 12px 14px;
+  }
+  .metric .v { font-size: 24px; font-weight: 640; letter-spacing: -.02em; font-variant-numeric: tabular-nums; }
+  .metric .k { font-size: 11.5px; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; margin-top: 2px; }
+  .metric .v .unit { font-size: 13px; color: var(--muted); font-weight: 500; margin-left: 2px; }
+
+  /* Typing area */
+  .typebox {
+    font-family: "SF Mono", "JetBrains Mono", ui-monospace, "Cascadia Code", Menlo, Consolas, monospace;
+    font-size: 22px; line-height: 1.85; letter-spacing: .01em;
+    background: var(--bg); border: 1px solid var(--line); border-radius: 10px;
+    padding: 22px 24px; position: relative; user-select: none;
+    min-height: 88px; outline: none;
+  }
+  .typebox:focus-visible { box-shadow: 0 0 0 2px var(--accent-soft); }
+  .typebox .ch { position: relative; color: var(--faint); transition: color .06s; }
+  .typebox .ch.done { color: var(--fg); }
+  .typebox .ch.wrong { color: var(--bad); background: var(--bad-soft); border-radius: 3px; }
+  .typebox .ch.space.wrong { background: var(--bad-soft); }
+  .typebox .ch.cur {
+    color: var(--muted);
+  }
+  .typebox .ch.cur::before {
+    content: ""; position: absolute; left: -1px; top: .12em; bottom: .12em; width: 2px;
+    background: var(--accent); border-radius: 2px; animation: blink 1.05s steps(1) infinite;
+  }
+  @keyframes blink { 50% { opacity: 0; } }
+
+  .hint-line { color: var(--muted); font-size: 13px; margin-top: 12px; display: flex; gap: 14px; flex-wrap: wrap; align-items: center; }
+  kbd {
+    font-family: ui-monospace, monospace; font-size: 11.5px; background: var(--bg);
+    border: 1px solid var(--line); border-bottom-width: 2px; border-radius: 5px;
+    padding: 1px 6px; color: var(--fg);
+  }
+
+  /* On-screen keyboard */
+  .keyboard { margin-top: 20px; display: flex; flex-direction: column; gap: 6px; align-items: center; }
+  .krow { display: flex; gap: 6px; justify-content: center; }
+  .key {
+    width: 42px; height: 42px; border-radius: 8px; border: 1px solid var(--line);
+    background: var(--panel); display: flex; align-items: center; justify-content: center;
+    font-size: 13px; font-weight: 550; color: var(--fg); position: relative;
+    transition: transform .06s, box-shadow .1s, background .1s;
+  }
+  .key.wide { width: 66px; font-size: 11px; color: var(--muted); }
+  .key.space { width: 260px; }
+  .key.home::after { content: ""; position: absolute; bottom: 6px; left: 50%; transform: translateX(-50%); width: 12px; height: 2px; background: var(--muted); border-radius: 2px; }
+  .key .fdot { position: absolute; top: 4px; right: 5px; width: 6px; height: 6px; border-radius: 50%; opacity: .0; }
+  .key[data-finger] .fdot { opacity: .9; }
+  .fdot.pinky { background: var(--f-pinky); } .fdot.ring { background: var(--f-ring); }
+  .fdot.mid { background: var(--f-mid); } .fdot.index { background: var(--f-index); }
+  .fdot.thumb { background: var(--f-thumb); }
+  .key.next {
+    background: var(--accent); color: #fff; border-color: var(--accent);
+    box-shadow: 0 0 0 3px var(--accent-soft); transform: translateY(-2px);
+  }
+  .key.next .fdot { opacity: 0; }
+  .key.flash-bad { background: var(--bad); color: #fff; border-color: var(--bad); }
+  .key.pressed { transform: translateY(1px); background: var(--line); }
+
+  .legend { display: flex; gap: 14px; flex-wrap: wrap; margin-top: 16px; justify-content: center; font-size: 12px; color: var(--muted); }
+  .legend span { display: inline-flex; align-items: center; gap: 6px; }
+  .legend i { width: 10px; height: 10px; border-radius: 3px; display: inline-block; }
+
+  /* Lesson list */
+  .lessons { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; }
+  .lesson {
+    text-align: left; border: 1px solid var(--line); background: var(--bg);
+    color: var(--fg); border-radius: 10px; padding: 13px 14px; cursor: pointer; position: relative;
+    transition: border-color .12s, transform .06s;
+  }
+  .lesson:hover:not(.locked) { border-color: var(--accent); }
+  .lesson:active:not(.locked) { transform: scale(.99); }
+  .lesson .lt { font-weight: 580; font-size: 14px; }
+  .lesson .lk { font-size: 12px; color: var(--muted); margin-top: 3px; font-family: ui-monospace, monospace; }
+  .lesson .lstar { position: absolute; top: 11px; right: 12px; font-size: 12px; color: var(--warn); letter-spacing: -1px; }
+  .lesson.locked { opacity: .5; cursor: not-allowed; }
+  .lesson.locked::after { content: "🔒"; position: absolute; top: 10px; right: 12px; font-size: 12px; }
+  .lesson.active-lesson { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-soft); }
+
+  /* Buttons / controls */
+  .row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+  .btn {
+    border: 1px solid var(--line); background: var(--panel); color: var(--fg);
+    padding: 9px 16px; border-radius: 9px; cursor: pointer; font-size: 14px; font-weight: 550;
+    transition: border-color .12s, background .12s, transform .05s;
+  }
+  .btn:hover { border-color: var(--accent); }
+  .btn:active { transform: scale(.98); }
+  .btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .btn.primary:hover { filter: brightness(1.05); }
+  .btn.ghost { background: transparent; }
+
+  .seg { display: inline-flex; background: var(--bg); border: 1px solid var(--line); border-radius: 9px; padding: 3px; gap: 2px; }
+  .seg button { border: 0; background: transparent; color: var(--muted); padding: 6px 13px; border-radius: 7px; cursor: pointer; font-size: 13px; font-weight: 550; }
+  .seg button.on { background: var(--panel); color: var(--fg); box-shadow: var(--shadow); }
+
+  .toggle { display: inline-flex; align-items: center; gap: 8px; color: var(--muted); font-size: 13px; cursor: pointer; user-select: none; }
+  .toggle input { display: none; }
+  .toggle .track { width: 34px; height: 20px; border-radius: 999px; background: var(--faint); position: relative; transition: background .15s; }
+  .toggle .track::after { content: ""; position: absolute; top: 2px; left: 2px; width: 16px; height: 16px; border-radius: 50%; background: #fff; transition: transform .15s; }
+  .toggle input:checked + .track { background: var(--accent); }
+  .toggle input:checked + .track::after { transform: translateX(14px); }
+
+  /* Result overlay */
+  .result { text-align: center; padding: 8px 0 4px; }
+  .result .big { font-size: 46px; font-weight: 680; letter-spacing: -.03em; }
+  .result .big .unit { font-size: 18px; color: var(--muted); font-weight: 500; }
+  .result .rmetrics { display: flex; justify-content: center; gap: 28px; margin: 14px 0 20px; flex-wrap: wrap; }
+  .result .rm .rv { font-size: 22px; font-weight: 620; font-variant-numeric: tabular-nums; }
+  .result .rm .rk { font-size: 12px; color: var(--muted); }
+  .pb-badge { display: inline-block; background: var(--accent-soft); color: var(--accent); font-size: 12px; font-weight: 600; padding: 3px 10px; border-radius: 999px; margin-bottom: 8px; }
+
+  /* Challenge */
+  .rush-stage { text-align: center; padding: 10px 0; }
+  .rush-word { font-family: ui-monospace, monospace; font-size: 40px; font-weight: 650; letter-spacing: .02em; min-height: 56px; }
+  .rush-word .ok { color: var(--good); }
+  .rush-word .no { color: var(--bad); }
+  .rush-word .rest { color: var(--faint); }
+  .rush-bar { height: 6px; background: var(--line); border-radius: 999px; margin: 20px auto 6px; max-width: 420px; overflow: hidden; }
+  .rush-bar > div { height: 100%; background: var(--accent); border-radius: 999px; width: 100%; }
+  .rush-hud { display: flex; justify-content: center; gap: 30px; margin-top: 10px; }
+  .rush-hud .rv { font-size: 22px; font-weight: 640; font-variant-numeric: tabular-nums; }
+  .rush-hud .rk { font-size: 11.5px; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; }
+  .lives { letter-spacing: 3px; font-size: 17px; }
+  .levelup { color: var(--accent); font-weight: 600; font-size: 14px; min-height: 20px; transition: opacity .3s; }
+
+  /* Stats */
+  .heat { display: flex; flex-direction: column; gap: 6px; align-items: center; margin-top: 8px; }
+  .heatrow { display: flex; gap: 5px; justify-content: center; }
+  .hk {
+    width: 34px; height: 34px; border-radius: 7px; display: flex; align-items: center; justify-content: center;
+    font-size: 12px; font-family: ui-monospace, monospace; border: 1px solid var(--line); color: var(--fg);
+    background: var(--bg); position: relative;
+  }
+  .hk .cnt { position: absolute; bottom: -1px; right: 2px; font-size: 8px; color: var(--muted); }
+  .muted-note { color: var(--muted); font-size: 13px; }
+
+  .footer-note { text-align: center; color: var(--faint); font-size: 12px; margin-top: 26px; }
+  a.link { color: var(--accent); text-decoration: none; cursor: pointer; }
+
+  .hidden { display: none !important; }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { animation: none !important; transition: none !important; }
+  }
+  @media (max-width: 560px) {
+    .key { width: 30px; height: 34px; font-size: 11px; }
+    .key.wide { width: 44px; }
+    .key.space { width: 150px; }
+    .typebox { font-size: 18px; }
+    .rush-word { font-size: 30px; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="brand">
+      <h1>Typing<span class="dot">.</span>Dojo</h1>
+      <small>learn to type fast</small>
+    </div>
+    <div class="nav-group">
+      <nav id="nav">
+        <button data-view="learn" class="active">Learn</button>
+        <button data-view="practice">Practice</button>
+        <button data-view="challenge">Challenge</button>
+        <button data-view="stats">Stats</button>
+      </nav>
+      <button id="theme-toggle" class="theme-toggle" title="Toggle light / dark" aria-label="Toggle light or dark theme">🌙</button>
+    </div>
+  </header>
+
+  <main id="app"></main>
+
+  <div class="footer-note">
+    Runs entirely in your browser · progress saved locally · press <kbd>Esc</kbd> to restart a run
+  </div>
+</div>
+
+<script>
+"use strict";
+(function () {
+  // ---------- persistence ----------
+  const KEY = "typing-dojo-v1";
+  const defaultState = {
+    lessonsDone: {},          // id -> {wpm, acc, stars}
+    bests: {},                // "practice-30" -> wpm
+    rushHigh: 0,
+    errors: {},               // char -> count
+    totalChars: 0,
+    totalCorrect: 0,
+    secondsPracticed: 0,
+    days: {},                 // "YYYY-MM-DD" -> true
+  };
+  let state = load();
+  function load() {
+    try {
+      const raw = localStorage.getItem(KEY);
+      if (!raw) return structuredClone(defaultState);
+      return Object.assign(structuredClone(defaultState), JSON.parse(raw));
+    } catch (e) { return structuredClone(defaultState); }
+  }
+  function save() { try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) {} }
+  function markToday() { state.days[new Date().toISOString().slice(0,10)] = true; }
+
+  // ---------- theme (light / dark toggle, overrides OS preference) ----------
+  const THEME_KEY = "typing-dojo-theme";
+  const themeBtn = document.getElementById("theme-toggle");
+  function osPrefersDark() {
+    return window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
+  }
+  function effectiveTheme() {
+    const forced = document.documentElement.getAttribute("data-theme");
+    return forced || (osPrefersDark() ? "dark" : "light");
+  }
+  function applyTheme(mode) {
+    // mode: "light" | "dark" | null (follow OS)
+    if (mode) document.documentElement.setAttribute("data-theme", mode);
+    else document.documentElement.removeAttribute("data-theme");
+    // show the icon for the theme you'd switch TO
+    themeBtn.textContent = effectiveTheme() === "dark" ? "☀️" : "🌙";
+  }
+  (function initTheme() {
+    let saved = null;
+    try { saved = localStorage.getItem(THEME_KEY); } catch (e) {}
+    applyTheme(saved === "light" || saved === "dark" ? saved : null);
+  })();
+  themeBtn.addEventListener("click", () => {
+    const next = effectiveTheme() === "dark" ? "light" : "dark";
+    applyTheme(next);
+    try { localStorage.setItem(THEME_KEY, next); } catch (e) {}
+  });
+  // if following OS and the OS theme changes, update the icon
+  if (window.matchMedia) {
+    window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => {
+      if (!document.documentElement.getAttribute("data-theme")) applyTheme(null);
+    });
+  }
+
+  // ---------- finger map ----------
+  // finger classes: pinky, ring, mid, index, thumb
+  const FINGER = {};
+  const assign = (keys, f) => keys.split("").forEach(k => FINGER[k] = f);
+  assign("`1qaz", "pinky");   // left pinky-ish
+  assign("2wsx", "ring");
+  assign("3edc", "mid");
+  assign("4rfv5tgb", "index");
+  assign("6yhn7ujm", "index");
+  assign("8ik,", "mid");
+  assign("9ol.", "ring");
+  assign("0p;/", "pinky");
+  assign("-[']=\\", "pinky");
+  FINGER[" "] = "thumb";
+  function fingerOf(ch) {
+    if (ch === " ") return "thumb";
+    const low = ch.toLowerCase();
+    return FINGER[low] || "index";
+  }
+  function fingerName(f) {
+    return { pinky:"Pinky", ring:"Ring", mid:"Middle", index:"Index", thumb:"Thumb" }[f] || f;
+  }
+
+  const KB_ROWS = [
+    ["1","2","3","4","5","6","7","8","9","0","-","="],
+    ["q","w","e","r","t","y","u","i","o","p","[","]"],
+    ["a","s","d","f","g","h","j","k","l",";","'"],
+    ["z","x","c","v","b","n","m",",",".","/"],
+  ];
+  const HOME_KEYS = new Set(["a","s","d","f","j","k","l",";"]);
+
+  // ---------- word / text pools ----------
+  const COMMON = ("the of to and a in is it you that he was for on are with as I his they be at " +
+    "one have this from or had by hot word but what some we can out other were all there when up use " +
+    "your how said an each she which do their time if will way about many then them write would like so " +
+    "these her long make thing see him two has look more day could go come did number sound no most people " +
+    "over know water than call first who may down side been now find any new work part take get place made " +
+    "live where after back little only round man year came show every good me give our under name very through " +
+    "just form much great think say help low line before turn cause same mean move right boy old too does tell").split(/\s+/);
+
+  const QUOTES = [
+    "The quick brown fox jumps over the lazy dog.",
+    "Practice does not make perfect, only perfect practice makes perfect.",
+    "The secret of getting ahead is getting started today.",
+    "Small steps every day add up to big results over time.",
+    "Focus on progress, not perfection, and speed will follow.",
+    "A smooth sea never made a skilled sailor worth their salt.",
+    "Type with your fingers, not your eyes, and let the words flow.",
+  ];
+
+  function pickWords(pool, n) {
+    const out = [];
+    for (let i = 0; i < n; i++) out.push(pool[Math.floor(Math.random() * pool.length)]);
+    return out.join(" ");
+  }
+  function repeatDrill(chars, groups, perGroup) {
+    // build home-row style drills e.g. "asdf jkl; fjdk sla;"
+    const out = [];
+    for (let g = 0; g < groups; g++) {
+      let s = "";
+      for (let i = 0; i < perGroup; i++) s += chars[Math.floor(Math.random()*chars.length)];
+      out.push(s);
+    }
+    return out.join(" ");
+  }
+  function wordsFromLetters(letters, n) {
+    // make pronounceable-ish clusters from a limited letter set
+    const out = [];
+    for (let i = 0; i < n; i++) {
+      const len = 3 + Math.floor(Math.random()*3);
+      let s = "";
+      for (let j = 0; j < len; j++) s += letters[Math.floor(Math.random()*letters.length)];
+      out.push(s);
+    }
+    return out.join(" ");
+  }
+
+  // ---------- lessons ----------
+  const LESSONS = [
+    { id:"home1", title:"Home Row I", keys:"asdf jkl;", gen:()=>repeatDrill("asdfjkl;", 10, 4) },
+    { id:"home2", title:"Home Row II", keys:"home words", gen:()=>wordsFromLetters("asdfghjkl", 12) },
+    { id:"top1",  title:"Top Row", keys:"qwerty uiop", gen:()=>wordsFromLetters("qwertyuiop", 12) },
+    { id:"mix1",  title:"Home + Top", keys:"e r u i", gen:()=>wordsFromLetters("asdfjkleruio", 12) },
+    { id:"bot1",  title:"Bottom Row", keys:"zxcvbnm", gen:()=>wordsFromLetters("zxcvbnm", 12) },
+    { id:"all1",  title:"All Letters", keys:"a–z", gen:()=>pickWords(COMMON.filter(w=>w.length<=5), 14) },
+    { id:"words", title:"Common Words", keys:"real words", gen:()=>pickWords(COMMON, 16) },
+    { id:"caps",  title:"Capitals", keys:"Shift + letter", gen:()=>pickWords(COMMON, 8).split(" ").map(w=>w[0].toUpperCase()+w.slice(1)).join(" ") },
+    { id:"num1",  title:"Numbers", keys:"1234567890", gen:()=>repeatDrill("1234567890", 10, 4) },
+    { id:"punc",  title:"Punctuation", keys:", . ; ' -", gen:()=>{ const p=[",",".",";","'","-"]; return pickWords(COMMON,10).split(" ").map(w=>w+p[Math.floor(Math.random()*p.length)]).join(" "); } },
+    { id:"sent",  title:"Sentences", keys:"full lines", gen:()=>QUOTES[Math.floor(Math.random()*QUOTES.length)] },
+    { id:"speed", title:"Speed Run", keys:"go fast", gen:()=>pickWords(COMMON, 24) },
+  ];
+  function lessonUnlocked(i) { return i === 0 || !!state.lessonsDone[LESSONS[i-1].id]; }
+  function starsFor(wpm, acc) {
+    let s = 0;
+    if (acc >= 0.9) s++;
+    if (wpm >= 20) s++;
+    if (wpm >= 35 && acc >= 0.95) s++;
+    return Math.max(1, s); // completing gives at least 1
+  }
+
+  // ---------- typing engine ----------
+  function TypingEngine(text) {
+    return {
+      text,
+      i: 0,
+      correct: 0,
+      typed: 0,
+      startedAt: null,
+      wrongCurrent: false,
+      errorMap: {},
+      done: false,
+      firstError: {}, // index -> true (was ever wrong here)
+      onKey(ch) {
+        if (this.done) return "ignore";
+        if (this.startedAt === null) this.startedAt = performance.now();
+        const expected = this.text[this.i];
+        this.typed++;
+        if (ch === expected) {
+          this.correct++;
+          this.i++;
+          this.wrongCurrent = false;
+          if (this.i >= this.text.length) this.done = true;
+          return "ok";
+        } else {
+          this.wrongCurrent = true;
+          const key = expected === " " ? "space" : expected;
+          this.errorMap[key] = (this.errorMap[key]||0) + 1;
+          state.errors[key] = (state.errors[key]||0) + 1;
+          return "bad";
+        }
+      },
+      backspace() {
+        if (this.i > 0) { this.i--; this.wrongCurrent = false; return true; }
+        return false;
+      },
+      elapsed() { return this.startedAt ? (performance.now() - this.startedAt) / 1000 : 0; },
+      wpm() {
+        const s = this.elapsed(); if (s < 0.5) return 0;
+        return Math.max(0, Math.round((this.correct / 5) / (s / 60)));
+      },
+      accuracy() { return this.typed ? this.correct / this.typed : 1; },
+      progress() { return this.i / this.text.length; },
+    };
+  }
+
+  // ---------- view routing ----------
+  const app = document.getElementById("app");
+  const nav = document.getElementById("nav");
+  let view = "learn";
+  let current = null; // active run controller with .handleKey, .cleanup
+
+  nav.addEventListener("click", e => {
+    const b = e.target.closest("button[data-view]");
+    if (!b) return;
+    switchView(b.dataset.view);
+  });
+  function switchView(v) {
+    view = v;
+    [...nav.children].forEach(c => c.classList.toggle("active", c.dataset.view === v));
+    render();
+  }
+  function render() {
+    if (current && current.cleanup) current.cleanup();
+    current = null;
+    app.innerHTML = "";
+    if (view === "learn") renderLearn();
+    else if (view === "practice") renderPractice();
+    else if (view === "challenge") renderChallenge();
+    else if (view === "stats") renderStats();
+  }
+
+  // ---------- shared: build keyboard ----------
+  function buildKeyboard() {
+    const kb = document.createElement("div");
+    kb.className = "keyboard";
+    KB_ROWS.forEach((row, ri) => {
+      const r = document.createElement("div");
+      r.className = "krow";
+      if (ri === 1) r.appendChild(spacer(20));
+      row.forEach(k => {
+        const el = document.createElement("div");
+        el.className = "key";
+        el.dataset.key = k;
+        const f = fingerOf(k);
+        el.dataset.finger = f;
+        if (HOME_KEYS.has(k)) el.classList.add("home");
+        el.innerHTML = `${k}<span class="fdot ${f}"></span>`;
+        r.appendChild(el);
+      });
+      kb.appendChild(r);
+    });
+    // space row
+    const sr = document.createElement("div");
+    sr.className = "krow";
+    const shiftL = keycap("shift", "wide");
+    const space = keycap("space", "space"); space.dataset.key = " ";
+    space.dataset.finger = "thumb";
+    const shiftR = keycap("shift", "wide");
+    sr.append(shiftL, space, shiftR);
+    kb.appendChild(sr);
+    return kb;
+  }
+  function keycap(label, cls) {
+    const el = document.createElement("div");
+    el.className = "key " + (cls||"");
+    el.textContent = label;
+    return el;
+  }
+  function spacer(w) { const s = document.createElement("div"); s.style.width = w+"px"; return s; }
+  function highlightNextKey(kb, ch) {
+    kb.querySelectorAll(".key.next").forEach(k => k.classList.remove("next"));
+    if (!ch) return;
+    const target = ch === " " ? " " : ch.toLowerCase();
+    const el = kb.querySelector(`.key[data-key="${cssEsc(target)}"]`);
+    if (el) el.classList.add("next");
+  }
+  function flashBadKey(kb, ch) {
+    const target = ch === " " ? " " : ch.toLowerCase();
+    const el = kb.querySelector(`.key[data-key="${cssEsc(target)}"]`);
+    if (!el) return;
+    el.classList.add("flash-bad");
+    setTimeout(() => el.classList.remove("flash-bad"), 160);
+  }
+  function cssEsc(s) { return s.replace(/["\\]/g, "\\$&"); }
+
+  function fingerLegend() {
+    const l = document.createElement("div");
+    l.className = "legend";
+    [["pinky","Pinky"],["ring","Ring"],["mid","Middle"],["index","Index"],["thumb","Thumb"]]
+      .forEach(([c,n]) => {
+        const s = document.createElement("span");
+        s.innerHTML = `<i style="background:var(--f-${c})"></i>${n}`;
+        l.appendChild(s);
+      });
+    return l;
+  }
+
+  // ---------- render text runner (shared by learn + practice) ----------
+  function renderTypeText(container, text, opts) {
+    // opts: { showKeyboard, onDone, metricsEls, focusHintEl }
+    const eng = TypingEngine(text);
+    const box = document.createElement("div");
+    box.className = "typebox";
+    box.tabIndex = 0;
+    const spans = [];
+    for (const ch of text) {
+      const s = document.createElement("span");
+      s.className = "ch" + (ch === " " ? " space" : "");
+      s.textContent = ch === " " ? " " : ch;
+      box.appendChild(s);
+      spans.push(s);
+    }
+    container.appendChild(box);
+
+    let kb = null;
+    if (opts.showKeyboard) {
+      kb = buildKeyboard();
+      container.appendChild(kb);
+      container.appendChild(fingerLegend());
+    }
+
+    function paint() {
+      spans.forEach((s, idx) => {
+        s.classList.remove("done","wrong","cur");
+        if (idx < eng.i) s.classList.add("done");
+        else if (idx === eng.i) { s.classList.add("cur"); if (eng.wrongCurrent) s.classList.add("wrong"); }
+      });
+      if (kb) highlightNextKey(kb, text[eng.i]);
+      if (opts.onTick) opts.onTick(eng);
+    }
+    paint();
+    if (kb) {
+      // finger hint
+      const fh = document.createElement("div");
+      fh.className = "hint-line";
+      container.appendChild(fh);
+      opts._fingerHint = () => {
+        const ch = text[eng.i];
+        if (!ch) { fh.textContent = ""; return; }
+        const f = fingerOf(ch);
+        const label = ch === " " ? "Space" : (ch === ch.toUpperCase() && ch !== ch.toLowerCase() ? "Shift + " + ch.toLowerCase() : ch);
+        fh.innerHTML = `Next: <kbd>${label === " " ? "Space" : label}</kbd> &nbsp;·&nbsp; use your <strong style="color:var(--f-${f})">${fingerName(f)}</strong>`;
+      };
+      opts._fingerHint();
+    }
+
+    const ctrl = {
+      handleKey(e) {
+        if (eng.done) return;
+        if (e.key === "Backspace") { if (eng.backspace()) paint(); e.preventDefault(); return; }
+        if (e.key.length !== 1) return; // ignore shift, arrows etc.
+        const res = eng.onKey(e.key);
+        if (res === "bad" && kb) flashBadKey(kb, text[eng.i]);
+        paint();
+        if (opts._fingerHint) opts._fingerHint();
+        if (eng.done) {
+          state.totalChars += eng.typed;
+          state.totalCorrect += eng.correct;
+          state.secondsPracticed += Math.round(eng.elapsed());
+          markToday(); save();
+          opts.onDone && opts.onDone(eng);
+        }
+      },
+      focus() { box.focus(); },
+      cleanup() {},
+      eng,
+    };
+    box.addEventListener("mousedown", () => box.focus());
+    return ctrl;
+  }
+
+  // ================= LEARN =================
+  let activeLessonIdx = 0;
+  function renderLearn() {
+    // pick first unlocked-not-done, else last
+    const card = el("div", "card");
+    card.innerHTML = `<h2>Lessons</h2><p class="sub">Follow the ladder. Each lesson unlocks the next. The keyboard shows the next key and which finger to use.</p>`;
+    const grid = el("div", "lessons");
+    LESSONS.forEach((L, i) => {
+      const done = state.lessonsDone[L.id];
+      const locked = !lessonUnlocked(i);
+      const b = document.createElement("button");
+      b.className = "lesson" + (locked ? " locked" : "") + (i === activeLessonIdx ? " active-lesson" : "");
+      b.innerHTML = `<div class="lt">${L.title}</div><div class="lk">${L.keys}</div>` +
+        (done ? `<div class="lstar">${"★".repeat(done.stars)}${"☆".repeat(3-done.stars)}</div>` : "");
+      if (!locked) b.addEventListener("click", () => { activeLessonIdx = i; startLesson(i); });
+      grid.appendChild(b);
+    });
+    card.appendChild(grid);
+    app.appendChild(card);
+
+    // active lesson area
+    const run = el("div", "card");
+    run.id = "lesson-run";
+    app.appendChild(run);
+    startLesson(activeLessonIdx);
+  }
+
+  function startLesson(i) {
+    activeLessonIdx = i;
+    // update active highlight in list
+    document.querySelectorAll(".lesson").forEach((n, idx) => n.classList.toggle("active-lesson", idx === i));
+    const L = LESSONS[i];
+    const text = L.gen();
+    const run = document.getElementById("lesson-run");
+    run.innerHTML = "";
+    const head = el("div");
+    head.innerHTML = `<h2>${L.title}</h2><p class="sub">Type the line below. Keep your fingers on the home row (F and J have bumps).</p>`;
+    run.appendChild(head);
+
+    const metrics = metricRow([["wpm","WPM","0"],["acc","Accuracy","100%"],["prog","Progress","0%"]]);
+    run.appendChild(metrics.el);
+
+    const area = el("div");
+    run.appendChild(area);
+
+    const ctrl = renderTypeText(area, text, {
+      showKeyboard: true,
+      onTick(eng) {
+        metrics.set("wpm", eng.wpm());
+        metrics.set("acc", Math.round(eng.accuracy()*100) + "%");
+        metrics.set("prog", Math.round(eng.progress()*100) + "%");
+      },
+      onDone(eng) {
+        const wpm = eng.wpm(), acc = eng.accuracy();
+        const stars = starsFor(wpm, acc);
+        const prev = state.lessonsDone[L.id];
+        state.lessonsDone[L.id] = { wpm: Math.max(wpm, prev?.wpm||0), acc, stars: Math.max(stars, prev?.stars||0) };
+        save();
+        showLessonResult(run, L, i, eng, stars);
+      },
+    });
+    current = ctrl;
+    ctrl.focus();
+
+    const bar = el("div", "row");
+    bar.style.marginTop = "16px";
+    const retry = mkBtn("Restart", "btn ghost", () => startLesson(i));
+    bar.appendChild(retry);
+    run.appendChild(bar);
+  }
+
+  function showLessonResult(run, L, i, eng, stars) {
+    run.innerHTML = "";
+    const wpm = eng.wpm(), acc = Math.round(eng.accuracy()*100);
+    const worst = topErrors(eng.errorMap, 3);
+    const res = el("div", "card"); res.style.boxShadow = "none"; res.style.padding = "0";
+    res.innerHTML = `
+      <div class="result">
+        <div style="font-size:26px;color:var(--warn);letter-spacing:2px;margin-bottom:6px">${"★".repeat(stars)}${"☆".repeat(3-stars)}</div>
+        <div class="big">${wpm}<span class="unit"> wpm</span></div>
+        <div class="rmetrics">
+          <div class="rm"><div class="rv">${acc}%</div><div class="rk">accuracy</div></div>
+          <div class="rm"><div class="rv">${eng.elapsed().toFixed(1)}s</div><div class="rk">time</div></div>
+          <div class="rm"><div class="rv">${worst.length ? worst.map(w=>w.k).join(" ") : "—"}</div><div class="rk">missed keys</div></div>
+        </div>
+      </div>`;
+    run.appendChild(res);
+    const bar = el("div", "row"); bar.style.justifyContent = "center";
+    bar.appendChild(mkBtn("Retry", "btn", () => startLesson(i)));
+    if (i + 1 < LESSONS.length) bar.appendChild(mkBtn("Next lesson →", "btn primary", () => { activeLessonIdx = i+1; switchView("learn"); }));
+    else bar.appendChild(mkBtn("Back to lessons", "btn primary", () => switchView("learn")));
+    run.appendChild(bar);
+  }
+
+  // ================= PRACTICE =================
+  let practiceDur = 30;
+  let practiceFocus = false;
+  function renderPractice() {
+    const card = el("div", "card");
+    card.innerHTML = `<h2>Practice test</h2><p class="sub">Type as many words as you can. Live speed and accuracy. Your best per duration is saved.</p>`;
+    const controls = el("div", "row"); controls.style.marginBottom = "16px";
+    const seg = el("div", "seg");
+    [15,30,60].forEach(d => {
+      const b = document.createElement("button");
+      b.textContent = d + "s"; b.className = d === practiceDur ? "on" : "";
+      b.addEventListener("click", () => { practiceDur = d; renderPractice(); });
+      seg.appendChild(b);
+    });
+    controls.appendChild(seg);
+
+    const focusToggle = document.createElement("label");
+    focusToggle.className = "toggle";
+    focusToggle.innerHTML = `<input type="checkbox" ${practiceFocus?"checked":""}><span class="track"></span> Focus on my weak keys`;
+    focusToggle.querySelector("input").addEventListener("change", e => practiceFocus = e.target.checked);
+    controls.appendChild(focusToggle);
+
+    const best = state.bests["practice-"+practiceDur];
+    const bestSpan = el("div"); bestSpan.className = "muted-note"; bestSpan.style.marginLeft = "auto";
+    bestSpan.textContent = best ? `Best (${practiceDur}s): ${best} wpm` : "No record yet";
+    controls.appendChild(bestSpan);
+    card.appendChild(controls);
+
+    const metrics = metricRow([["wpm","WPM","0"],["acc","Accuracy","100%"],["time","Time","0s"]]);
+    card.appendChild(metrics.el);
+
+    const area = el("div");
+    card.appendChild(area);
+    app.appendChild(card);
+
+    startPractice(area, metrics);
+  }
+
+  function makePracticeText() {
+    if (practiceFocus) {
+      const weak = topErrors(state.errors, 6).map(e => e.k).filter(k => k !== "space" && k.length === 1);
+      if (weak.length) {
+        // bias words that contain weak letters, fill with common words
+        const biased = COMMON.filter(w => weak.some(c => w.includes(c)));
+        const pool = biased.length >= 10 ? biased : COMMON;
+        return pickWords(pool, 60);
+      }
+    }
+    return pickWords(COMMON, 60);
+  }
+
+  function startPractice(area, metrics) {
+    area.innerHTML = "";
+    let text = makePracticeText();
+    const eng = TypingEngine(text);
+    let timer = null, ended = false, remaining = practiceDur;
+
+    const box = el("div", "typebox"); box.tabIndex = 0;
+    const spans = [];
+    function buildSpans() {
+      box.innerHTML = "";
+      spans.length = 0;
+      for (const ch of text) {
+        const s = document.createElement("span");
+        s.className = "ch" + (ch === " " ? " space" : "");
+        s.textContent = ch === " " ? " " : ch;
+        box.appendChild(s); spans.push(s);
+      }
+    }
+    buildSpans();
+    area.appendChild(box);
+
+    const hint = el("div", "hint-line");
+    hint.innerHTML = `Click the text and start typing. <span>Press <kbd>Esc</kbd> to restart.</span>`;
+    area.appendChild(hint);
+
+    function paint() {
+      spans.forEach((s, idx) => {
+        s.classList.remove("done","wrong","cur");
+        if (idx < eng.i) s.classList.add("done");
+        else if (idx === eng.i) { s.classList.add("cur"); if (eng.wrongCurrent) s.classList.add("wrong"); }
+      });
+      metrics.set("wpm", eng.wpm());
+      metrics.set("acc", Math.round(eng.accuracy()*100)+"%");
+      metrics.set("time", remaining + "s");
+    }
+    paint();
+
+    function tick() {
+      remaining--;
+      metrics.set("wpm", eng.wpm());
+      metrics.set("time", Math.max(0,remaining) + "s");
+      if (remaining <= 0) finish();
+    }
+    function extend() {
+      // near end of text? append more
+      if (eng.i > text.length - 20) {
+        const more = " " + makePracticeText();
+        text += more;
+        buildSpans();
+      }
+    }
+    function finish() {
+      if (ended) return; ended = true;
+      clearInterval(timer);
+      const wpm = eng.wpm(), acc = Math.round(eng.accuracy()*100);
+      state.totalChars += eng.typed; state.totalCorrect += eng.correct;
+      state.secondsPracticed += practiceDur; markToday();
+      const key = "practice-"+practiceDur;
+      const isPB = wpm > (state.bests[key]||0);
+      if (isPB) state.bests[key] = wpm;
+      save();
+      const parent = area.parentElement;
+      area.innerHTML = "";
+      const res = el("div", "result");
+      res.innerHTML =
+        (isPB ? `<div class="pb-badge">New personal best ✦</div>` : "") +
+        `<div class="big">${wpm}<span class="unit"> wpm</span></div>
+         <div class="rmetrics">
+           <div class="rm"><div class="rv">${acc}%</div><div class="rk">accuracy</div></div>
+           <div class="rm"><div class="rv">${eng.correct}</div><div class="rk">correct chars</div></div>
+           <div class="rm"><div class="rv">${practiceDur}s</div><div class="rk">duration</div></div>
+         </div>`;
+      area.appendChild(res);
+      const bar = el("div", "row"); bar.style.justifyContent = "center";
+      bar.appendChild(mkBtn("Go again", "btn primary", () => renderPractice()));
+      area.appendChild(bar);
+    }
+
+    const ctrl = {
+      handleKey(e) {
+        if (ended) return;
+        if (e.key === "Backspace") { if (eng.backspace()) paint(); e.preventDefault(); return; }
+        if (e.key.length !== 1) return;
+        if (eng.startedAt === null && timer === null) {
+          timer = setInterval(tick, 1000);
+        }
+        eng.onKey(e.key);
+        extend();
+        paint();
+      },
+      restart() { clearInterval(timer); renderPractice(); },
+      cleanup() { clearInterval(timer); },
+      focus() { box.focus(); },
+    };
+    current = ctrl;
+    box.addEventListener("mousedown", () => box.focus());
+    box.focus();
+  }
+
+  // ================= CHALLENGE (Word Rush) =================
+  function renderChallenge() {
+    const card = el("div", "card");
+    card.innerHTML = `<h2>Word Rush</h2><p class="sub">Type each word before the bar runs out. It speeds up as you go. Three lives.</p>`;
+    const hud = el("div"); hud.style.textAlign = "center";
+    hud.innerHTML = `<div class="muted-note">High score: <strong style="color:var(--fg)">${state.rushHigh}</strong></div>`;
+    card.appendChild(hud);
+    const stageWrap = el("div"); card.appendChild(stageWrap);
+    app.appendChild(card);
+    rushStart(stageWrap);
+  }
+
+  function rushStart(wrap) {
+    wrap.innerHTML = "";
+    const stage = el("div", "rush-stage");
+    stage.innerHTML = `
+      <div class="levelup" id="rush-msg"></div>
+      <div class="rush-word" id="rush-word"></div>
+      <div class="rush-bar"><div id="rush-fill"></div></div>
+      <div class="rush-hud">
+        <div><div class="rv" id="rush-score">0</div><div class="rk">score</div></div>
+        <div><div class="rv" id="rush-streak">0</div><div class="rk">streak</div></div>
+        <div><div class="rv" id="rush-level">1</div><div class="rk">level</div></div>
+        <div><div class="rv lives" id="rush-lives">❤❤❤</div><div class="rk">lives</div></div>
+      </div>`;
+    wrap.appendChild(stage);
+
+    const wordEl = stage.querySelector("#rush-word");
+    const fillEl = stage.querySelector("#rush-fill");
+    const msgEl = stage.querySelector("#rush-msg");
+
+    let score = 0, streak = 0, level = 1, lives = 3;
+    let word = "", pos = "", correctFlag = true;
+    let deadline = 0, duration = 3500, raf = null, running = true;
+    let startTs = 0;
+
+    function timeForLevel() { return Math.max(1400, 3500 - (level-1)*220); }
+    function nextWord() {
+      const maxLen = Math.min(8, 3 + Math.floor(level/2));
+      const pool = COMMON.filter(w => w.length <= maxLen && w.length >= 2);
+      word = pool[Math.floor(Math.random()*pool.length)];
+      pos = "";
+      duration = timeForLevel();
+      startTs = performance.now();
+      deadline = startTs + duration;
+      renderWord();
+    }
+    function renderWord(bad) {
+      const typed = pos.length;
+      let html = "";
+      html += `<span class="ok">${word.slice(0, typed)}</span>`;
+      const rest = word.slice(typed);
+      html += `<span class="${bad?"no":"rest"}">${rest}</span>`;
+      wordEl.innerHTML = html;
+    }
+    function loop() {
+      if (!running) return;
+      const now = performance.now();
+      const frac = Math.max(0, (deadline - now) / duration);
+      fillEl.style.width = (frac*100) + "%";
+      fillEl.style.background = frac < 0.3 ? "var(--bad)" : (frac < 0.6 ? "var(--warn)" : "var(--accent)");
+      if (now >= deadline) { loseLife(); }
+      raf = requestAnimationFrame(loop);
+    }
+    function loseLife() {
+      lives--; streak = 0;
+      stage.querySelector("#rush-streak").textContent = streak;
+      stage.querySelector("#rush-lives").textContent = "❤".repeat(lives) + "·".repeat(3-lives);
+      flashMsg("Missed!", "var(--bad)");
+      if (lives <= 0) { gameOver(); return; }
+      nextWord();
+    }
+    function completeWord() {
+      const speedBonus = Math.max(1, Math.round((deadline - performance.now())/200));
+      streak++;
+      const gain = 10 + speedBonus + streak;
+      score += gain;
+      stage.querySelector("#rush-score").textContent = score;
+      stage.querySelector("#rush-streak").textContent = streak;
+      // level up every 5 words
+      if (streak % 5 === 0) {
+        level++;
+        stage.querySelector("#rush-level").textContent = level;
+        flashMsg("Level " + level + "!", "var(--accent)");
+      }
+      nextWord();
+    }
+    function flashMsg(t, color) {
+      msgEl.textContent = t; msgEl.style.color = color; msgEl.style.opacity = "1";
+      setTimeout(() => { msgEl.style.opacity = "0"; }, 700);
+    }
+    function gameOver() {
+      running = false; cancelAnimationFrame(raf);
+      const isHigh = score > state.rushHigh;
+      if (isHigh) { state.rushHigh = score; }
+      state.secondsPracticed += Math.round((performance.now()-firstStart)/1000);
+      markToday(); save();
+      wrap.innerHTML = "";
+      const res = el("div", "result");
+      res.innerHTML =
+        (isHigh ? `<div class="pb-badge">New high score ✦</div>` : "") +
+        `<div class="big">${score}</div>
+         <div class="rmetrics">
+           <div class="rm"><div class="rv">${level}</div><div class="rk">level reached</div></div>
+           <div class="rm"><div class="rv">${state.rushHigh}</div><div class="rk">best</div></div>
+         </div>`;
+      wrap.appendChild(res);
+      const bar = el("div", "row"); bar.style.justifyContent = "center";
+      bar.appendChild(mkBtn("Play again", "btn primary", () => rushStart(wrap)));
+      wrap.appendChild(bar);
+      current = null;
+    }
+
+    const firstStart = performance.now();
+    const ctrl = {
+      handleKey(e) {
+        if (!running) return;
+        if (e.key.length !== 1) return;
+        const expected = word[pos.length];
+        if (e.key === expected) {
+          pos += e.key;
+          renderWord();
+          if (pos.length === word.length) completeWord();
+        } else {
+          // wrong char: brief red flash, small penalty on timer
+          const key = expected || "?";
+          state.errors[key] = (state.errors[key]||0)+1;
+          renderWord(true);
+          setTimeout(() => running && renderWord(), 120);
+          deadline -= 250; // punish mistakes
+        }
+      },
+      cleanup() { running = false; cancelAnimationFrame(raf); },
+    };
+    current = ctrl;
+    nextWord();
+    raf = requestAnimationFrame(loop);
+  }
+
+  // ================= STATS =================
+  function renderStats() {
+    const acc = state.totalChars ? Math.round(state.totalCorrect/state.totalChars*100) : 100;
+    const mins = Math.round(state.secondsPracticed/60);
+    const dayCount = Object.keys(state.days).length;
+    const streak = currentStreak();
+    const bestPractice = Math.max(0, ...Object.values(state.bests).map(Number), 0);
+    const lessonsDone = Object.keys(state.lessonsDone).length;
+
+    const card = el("div", "card");
+    card.innerHTML = `<h2>Your progress</h2><p class="sub">Everything is stored locally on this device.</p>`;
+    const m = metricRow([
+      ["a","Best WPM", bestPractice||"—"],
+      ["b","Lifetime accuracy", acc+"%"],
+      ["c","Time practiced", mins+" min"],
+      ["d","Day streak", streak],
+    ]);
+    card.appendChild(m.el);
+    const m2 = metricRow([
+      ["e","Lessons cleared", lessonsDone+" / "+LESSONS.length],
+      ["f","Rush high score", state.rushHigh],
+      ["g","Active days", dayCount],
+      ["h","Chars typed", state.totalChars],
+    ]);
+    card.appendChild(m2.el);
+    app.appendChild(card);
+
+    // error heatmap
+    const hcard = el("div", "card");
+    hcard.innerHTML = `<h2>Trouble keys</h2><p class="sub">Keys you miss most. Turn on "Focus on my weak keys" in Practice to drill them.</p>`;
+    const maxErr = Math.max(1, ...Object.values(state.errors));
+    const heat = el("div", "heat");
+    KB_ROWS.forEach(row => {
+      const r = el("div", "heatrow");
+      row.forEach(k => {
+        const cnt = state.errors[k] || 0;
+        const hk = el("div", "hk");
+        const t = cnt / maxErr;
+        hk.style.background = cnt ? `color-mix(in srgb, var(--bad) ${Math.round(20+t*60)}%, var(--bg))` : "var(--bg)";
+        hk.style.color = t > 0.6 ? "#fff" : "var(--fg)";
+        hk.innerHTML = k + (cnt ? `<span class="cnt" style="color:${t>0.6?'#fff':'var(--muted)'}">${cnt}</span>` : "");
+        r.appendChild(hk);
+      });
+      heat.appendChild(r);
+    });
+    hcard.appendChild(heat);
+
+    const reset = el("div", "row"); reset.style.marginTop = "18px"; reset.style.justifyContent = "flex-end";
+    reset.appendChild(mkBtn("Reset all progress", "btn ghost", () => {
+      if (confirm("Erase all progress, stats, and records on this device?")) {
+        state = structuredClone(defaultState); save(); switchView("stats");
+      }
+    }));
+    hcard.appendChild(reset);
+    app.appendChild(hcard);
+  }
+  function currentStreak() {
+    let n = 0;
+    const d = new Date();
+    for (;;) {
+      const key = d.toISOString().slice(0,10);
+      if (state.days[key]) { n++; d.setDate(d.getDate()-1); }
+      else if (n === 0 && key === new Date().toISOString().slice(0,10)) { d.setDate(d.getDate()-1); }
+      else break;
+    }
+    return n;
+  }
+
+  // ---------- small DOM helpers ----------
+  function el(tag, cls) { const e = document.createElement(tag); if (cls) e.className = cls; return e; }
+  function mkBtn(label, cls, fn) { const b = el("button", cls); b.textContent = label; b.addEventListener("click", fn); return b; }
+  function metricRow(items) {
+    const wrap = el("div", "metrics");
+    const map = {};
+    items.forEach(([id,k,v]) => {
+      const m = el("div", "metric");
+      m.innerHTML = `<div class="v" data-id="${id}">${v}</div><div class="k">${k}</div>`;
+      wrap.appendChild(m);
+      map[id] = m.querySelector(".v");
+    });
+    return { el: wrap, set(id,v){ if(map[id]) map[id].textContent = v; } };
+  }
+  function topErrors(obj, n) {
+    return Object.entries(obj).map(([k,v])=>({k,v})).sort((a,b)=>b.v-a.v).slice(0,n);
+  }
+
+  // ---------- global key handling ----------
+  window.addEventListener("keydown", e => {
+    // Esc restarts current run in practice/challenge/learn
+    if (e.key === "Escape") {
+      if (view === "practice") { renderPractice(); return; }
+      if (view === "challenge") { renderChallenge(); return; }
+      if (view === "learn") { startLesson(activeLessonIdx); return; }
+    }
+    if (!current || !current.handleKey) return;
+    // prevent page scroll on space while typing
+    if (e.key === " ") e.preventDefault();
+    current.handleKey(e);
+  });
+
+  // ---------- boot ----------
+  // set activeLessonIdx to first not-done unlocked lesson
+  activeLessonIdx = (() => {
+    for (let i = 0; i < LESSONS.length; i++) if (lessonUnlocked(i) && !state.lessonsDone[LESSONS[i].id]) return i;
+    return 0;
+  })();
+  render();
+})();
+</script>
+</body>
+</html>
